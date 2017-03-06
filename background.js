@@ -252,6 +252,9 @@ function debunkSite(u, t, d){
                     console && console.log('site FOUND ! ', site_id);
                 }
                 try {
+					
+					var sources2 = [];
+					
                     site_actif     = sites[site_id][col_nom];                    // nom du site
                     note_decodex   = parseInt(sites[site_id][col_note_decodex]); // note decodex
                     soumission     = parseInt(sites[site_id][col_soumission]);   // note insoumis
@@ -284,7 +287,7 @@ function debunkSite(u, t, d){
                     var raw_sources = sites[site_id][col_sources];                // Nos sources (urls séparés par virgule et/ou espace)
 
                     if (3 <= _debug) {
-                        console && console.info("sources avant markdown", sources);
+                        console && console.info("sources avant markdown", sources2);
                     }
                     // Markdown style
                     var regex = new RegExp(/\[([^\]]*?)\]\(([^\)]*?)\)[, ]{0,2}/gm);
@@ -292,12 +295,12 @@ function debunkSite(u, t, d){
                     while (match != null) {
                         title = match[1];
                         url   = match[2];
-                        sources.push({"url":url, "title":title});
+                        sources2.push({"url":url, "title":title});
                         match = regex.exec(raw_sources);
                     }
 
                     if (3 <= _debug) {
-                        console && console.log("sources apres markdown", sources);
+                        console && console.log("sources apres markdown", sources2);
                     }
 
                     // URL toute seule
@@ -306,12 +309,12 @@ function debunkSite(u, t, d){
                     while (match != null) {
                         url   = match[1];
                         title = match[2];
-                        sources.push({"url":url, "title":title});
+                        sources2.push({"url":url, "title":title});
                         match = regex.exec(raw_sources);
                     }
 
                     if (3 <= _debug) {
-                        console && console.log("sources apres urls simples", sources);
+                        console && console.log("sources apres urls simples", sources2);
                     }
 
                     if (2 <= _debug) {
@@ -325,10 +328,13 @@ function debunkSite(u, t, d){
                         console && console.log('interets       =',interets       );
                         console && console.log('conflits       =',conflits       );
                         console && console.log('subventions    =',subventions    );
-                        console && console.log('sources        =',sources        );
+                        console && console.log('sources        =',sources2        );
                         console && console.groupEnd();
 
                     }
+					
+					sources = sources2;
+					
                 } catch(e) {
                     if (1 <= _debug) {
                         console && console.error("ERREUR DEBUNKER");
