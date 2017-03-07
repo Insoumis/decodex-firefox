@@ -107,6 +107,7 @@ function linkInNewTab(a) {
 		}
 		e.preventDefault();
 	});
+	return a;
 }
 
 function createLink(toDOM,url,title) {
@@ -114,6 +115,7 @@ function createLink(toDOM,url,title) {
 	a.href = url; a.innerText = title;
 	linkInNewTab(a);
 	toDOM.appendChild(a);
+	return a;
 }
 
 
