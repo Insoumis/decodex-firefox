@@ -70,6 +70,7 @@
                              .####+
                                ,:`
  */
+var browser = browser || chrome;
 
 function bulleStore(e){
     var infobulles;
@@ -113,24 +114,29 @@ function main(){
                 }
             } catch(e) {
                 console.log("error in install.js for infobulles, check-alert"+i);
-                console && console.info("error in install.js for infobulles, check-alert"+i);
-                console && console.error(e);
+				// generait des erreurs
+				if (0) {
+					console && console.info("error in install.js for infobulles, check-alert"+i);
+					console && console.error(e);
+				}
             }
         }
 
     });
 }
 document.addEventListener('DOMContentLoaded', function () {
+	for(var i=0;i<6;i++){
+		try {
+			var selector = document.getElementById('check-alert' + i);
+			selector.addEventListener('click', bulleStore);
+		} catch(e) {
+			// generait des erreurs
+			if (0) {
+				console && console.info("error in install.js for check-alert"+i);
+				console && console.error(e);
+			}
+		}
 
-    for(var i=0;i<6;i++){
-        try {
-            var selector = document.getElementById('check-alert' + i);
-            selector.addEventListener('click', bulleStore);
-        } catch(e) {
-            console && console.info("error in install.js for check-alert"+i);
-            console && console.error(e);
-        }
-
-    }
+	}
     main();
 });

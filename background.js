@@ -71,6 +71,8 @@
                                ,:`
 */
 
+var browser = browser || chrome;
+
 var _debug = 0; // 0=quiet, 1=verbose, 2=more verbose, 3= very very verbose
 if (_debug) {
     console && console.warn("DEBUG LEVEL", _debug);
@@ -253,7 +255,7 @@ function debunkSite(u, t, d){
                 }
                 try {
 					
-					var sources2 = [];
+					sources = [];
 					
                     site_actif     = sites[site_id][col_nom];                    // nom du site
                     note_decodex   = parseInt(sites[site_id][col_note_decodex]); // note decodex
@@ -287,7 +289,7 @@ function debunkSite(u, t, d){
                     var raw_sources = sites[site_id][col_sources];                // Nos sources (urls séparés par virgule et/ou espace)
 
                     if (3 <= _debug) {
-                        console && console.info("sources avant markdown", sources2);
+                        console && console.info("sources avant markdown", sources);
                     }
                     // Markdown style
                     var regex = new RegExp(/\[([^\]]*?)\]\(([^\)]*?)\)[, ]{0,2}/gm);
@@ -295,12 +297,12 @@ function debunkSite(u, t, d){
                     while (match != null) {
                         title = match[1];
                         url   = match[2];
-                        sources2.push({"url":url, "title":title});
+                        sources.push({"url":url, "title":title});
                         match = regex.exec(raw_sources);
                     }
 
                     if (3 <= _debug) {
-                        console && console.log("sources apres markdown", sources2);
+                        console && console.log("sources apres markdown", sources);
                     }
 
                     // URL toute seule
@@ -309,12 +311,12 @@ function debunkSite(u, t, d){
                     while (match != null) {
                         url   = match[1];
                         title = match[2];
-                        sources2.push({"url":url, "title":title});
+                        sources.push({"url":url, "title":title});
                         match = regex.exec(raw_sources);
                     }
 
                     if (3 <= _debug) {
-                        console && console.log("sources apres urls simples", sources2);
+                        console && console.log("sources apres urls simples", sources);
                     }
 
                     if (2 <= _debug) {
@@ -328,12 +330,11 @@ function debunkSite(u, t, d){
                         console && console.log('interets       =',interets       );
                         console && console.log('conflits       =',conflits       );
                         console && console.log('subventions    =',subventions    );
-                        console && console.log('sources        =',sources2        );
+                        console && console.log('sources        =',sources        );
                         console && console.groupEnd();
 
                     }
 					
-					sources = sources2;
 					
                 } catch(e) {
                     if (1 <= _debug) {
@@ -408,6 +409,7 @@ function debunkSite(u, t, d){
 
 function checkSite(do_display){
     browser.tabs.query({currentWindow: true, active: true}, function(tabs){
+		if (!tabs.length) return;
         var tab;
         for (active_tab of tabs) {
             tab = active_tab;
