@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+  "name": "Decodex Insoumis",
+  "version": "{VERSION}",
+  "description": "Avec le Décodex Insoumis, apprenez en un clin d'oeil qui se trouve derri&egrave;re le média que vous &ecirc;tre en train de lire !",
+  "background": {
+    "scripts": ["background.js", "content.js", "install.js"],
+    "persistent": false
+  },
+  "homepage_url": "http://decodex.insoumis.online/",
+  "icons": {
+    "16": "icone.png"
+  },
+  "browser_action" :
+  {
+    "default_icon" : "icone.png",
+    "default_title" : "Décodex Insoumis",
+    "default_popup": "popup.html"
+  },
+    "content_scripts": [
+    {
+      "matches": ["http://*/*","https://*/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "permissions" : [
+    "declarativeContent",
+    "tabs",
+    "storage",
+    "notifications",
+    "activeTab",
+
+    "http://decodex.insoumis.online/database.json"
+  ]
+}
