@@ -461,6 +461,9 @@ function checkSite(do_display){
         }
         //active_url = lastSlash(tab.url);
 		active_url = tab.url;
+			if (!active_url.endsWith("/")) active_url= active_url+"/";
+			
+		
         if (_debug > 5) {
             console && console.warn("active url", active_url);
         }
