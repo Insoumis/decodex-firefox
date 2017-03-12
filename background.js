@@ -105,7 +105,7 @@ var col_influence3    = 19
 
 var base_url = "http://decodex.insoumis.online/database.json";
 var always_refresh = false;
-var urls = "";
+
 var note = null;
 var soumission = null;
 var notule = ""
@@ -124,29 +124,29 @@ var subventions   = '';
 var publicite     = '';
 var sources       = [];
 
+var urls = "";
+var sites = "";
+var infobulles = [];
+var last_JSON_download = 0;
+
+var callback_once_loaded = null;
 
 function onInstall() {
     if (1 <= _debug)
         console && console.log("Le Décodex insoumis est installé");
-    loadData();
+    //loadData();
     var last_update = new Date();
+	infobulles = [false, true, true, true, true, true];
     browser.storage.local.set(
             {
-                'infobulles': [false, true, true, true, true, true],
-                "installed" : true,
-                'last_update': last_update.getTime(),
+                'infobulles': infobulles,
+                'installed' : true
             }
             );
     browser.tabs.create({url: "install.html"});
 }
 
 
-browser.storage.local.get(['installed'], function(results){
-    var install = results.installed;
-    if (install != true) {
-        onInstall();
-    }
-});
 
 
 function loadJSON(path, success, error)
@@ -174,7 +174,37 @@ function loadJSON(path, success, error)
 }
 
 
-function loadData(){
+function loadDataFromJSON() {
+	var new_update = new Date();
+	loadJSON(base_url+"?"+new_update.getTime(),
+		function(data) {
+			
+			urls = data.urls;
+			sites = data.sites;
+			last_JSON_download = new_update.getTime();
+			
+			if (2 <= _debug) {
+				console && console.info("storing urls...", data['urls']);
+			}
+			browser.storage.local.set({'urls': data['urls']}, function() {
+			});
+			if (2 <= _debug)
+				console && console.info("set sites to", data['sites']);
+			browser.storage.local.set({'sites': data['sites']}, function() {
+			});
+			if (3 <= _debug)
+				console && console.info("set last_update to", new_update.getTime());
+			
+			browser.storage.local.set({'last_update': new_update.getTime()}, function() {
+			});
+
+		},
+		function(data) {
+			console && console.error("error on loadJSON", data);
+		}
+	);
+}
+function loadData() {
 
     if (1 <= _debug) {
         console && console.info('start loadData()');
@@ -182,35 +212,65 @@ function loadData(){
     }
     browser.storage.local.get('last_update', function(results){
         var new_update = new Date();
-        if (2 <= _debug) {
-            console && console.log("found last update : ", results, "base url=", base_url+"?"+new_update.getTime());
-        }
-        loadJSON(base_url+"?"+new_update.getTime(),
-                function(data) {
-                    if (2 <= _debug) {
-                        console && console.info("storing urls...", data['urls']);
-                    }
-                    browser.storage.local.set({'urls': data['urls']}, function() {
-                    });
-                    if (2 <= _debug)
-                        console && console.info("set sites to", data['sites']);
-                    browser.storage.local.set({'sites': data['sites']}, function() {
-                    });
-                    if (3 <= _debug)
-                        console && console.info("set last_update to", new_update.getTime());
-                    browser.storage.local.set({'last_update': new_update.getTime()}, function() {
-                    });
-
-                },
-                function(data) {
-                    console && console.error("error on loadJSON", data);
-                }
-                );
+        
+		browser.storage.local.get(['urls', "sites", "infobulles", "last_update"], function(results){
+			if (results.last_update && results.urls && results.sites) {
+				urls = results.urls;
+				sites = results.sites;
+				last_JSON_download = results.last_update;
+				infobulles = results.infobulles;
+				if (callback_once_loaded) {
+					callback_once_loaded();
+					callback_once_loaded = null;
+				}
+			} else {
+				loadDataFromJSON();
+			}
+		});
+		
+        
     });
 }
 
+function zeroDatabase() {
+	browser.storage.local.set({'urls': null, 'site':null,'last_update':null,'installed' : null},null);
+	urls = "";
+	sites = "";
+	last_JSON_download = 0;
+}
 
-function lastSlash(u){
+function testDate() {
+	var today = new Date();
+	if (last_JSON_download) {
+		if(always_refresh || (today.getTime() - last_JSON_download)/1000/60/60 >= 24) {
+			if (1 <= _debug) {
+				console && console.log("refresh every hour or refresh forced");
+			}
+			loadData();
+		} else {
+			if (2 <= _debug) {
+				console && console.log("(not refresh) use data found in cache");
+			}
+		}
+	}
+}
+
+
+
+
+document.addEventListener("DOMContentLoaded", function(){ 
+
+	browser.storage.local.get(['installed'], function(results){
+		var install = results.installed;
+		if (install != true) {
+			onInstall();
+		}
+	});
+
+	loadData();
+}, false);
+
+function lastSlash(u) {
     if(u.lastIndexOf('/') == u.length-1) {
         return u.substring(0, u.length-1);
     }
@@ -235,186 +295,172 @@ function youtubeChannel(u){
 }
 
 
+
 function debunkSite(u, t, d){
     if (3 <= _debug)
         console && console.log('debunk site ', u);
 
-    browser.storage.local.get(['urls', "sites", "already_visited", "infobulles", "last_update"], function(results){
-        if (3 <= _debug) {
-            console && console.info("debunkSite : var results");
-            console && console.log(results);
-        }
-        try {
-            urls = results.urls;
-            sites = results.sites;
-            debunker = urls.hasOwnProperty(u);
-            if (debunker == true) {
-                site_id = urls[u];
-                if (2 <= _debug) {
-                    console && console.log('site FOUND ! ', site_id);
-                }
-                try {
-					
-					sources = [];
-					
-                    site_actif     = sites[site_id][col_nom];                    // nom du site
-                    note_decodex   = parseInt(sites[site_id][col_note_decodex]); // note decodex
-                    soumission     = parseInt(sites[site_id][col_soumission]);   // note insoumis
-                    notule         = sites[site_id][col_desc];                   // description originale
-                    slug           = sites[site_id][col_slug];                   // nom normalisé
-
-                    var proprietaire1 = sites[site_id][col_proprietaire1];      // propriétaires
-                    var fortunes1      = sites[site_id][col_fortune1     ];      // propriétaires
-                    var marque1        = sites[site_id][col_marque1      ];      // propriétaires
-                    var influence1     = sites[site_id][col_influence1   ];      // propriétaires
-
-                    var proprietaire2 = sites[site_id][col_proprietaire2];      // propriétaires
-                    var fortunes2      = sites[site_id][col_fortune2     ];      // propriétaires
-                    var marque2        = sites[site_id][col_marque2      ];      // propriétaires
-                    var influence2     = sites[site_id][col_influence2   ];      // propriétaires
-
-                    var proprietaire3 = sites[site_id][col_proprietaire3];      // propriétaires
-                    var fortunes3      = sites[site_id][col_fortune3     ];      // propriétaires
-                    var marque3        = sites[site_id][col_marque3      ];      // propriétaires
-                    var influence3     = sites[site_id][col_influence3   ];      // propriétaires
-
-                    proprietaires = [proprietaire1, proprietaire2, proprietaire3];
-                    fortunes      = [fortunes1    , fortunes2    , fortunes3    ];
-                    marques       = [marque1     , marque2       , marque3      ];
-                    influences    = [influence1  , influence2    , influence3   ];
-
-                    subventions    = sites[site_id][col_subventions];            // Montant des subventions d'état
-                    publicite      = sites[site_id][col_pub];                    // Pub ?
-
-                    var raw_sources = sites[site_id][col_sources];                // Nos sources (urls séparés par virgule et/ou espace)
-
-                    if (3 <= _debug) {
-                        console && console.info("sources avant markdown", sources);
-                    }
-                    // Markdown style
-                    var regex = new RegExp(/\[([^\]]*?)\]\(([^\)]*?)\)[, ]{0,2}/gm);
-                    match = regex.exec(raw_sources);
-                    while (match != null) {
-                        title = match[1];
-                        url   = match[2];
-                        sources.push({"url":url, "title":title});
-                        match = regex.exec(raw_sources);
-                    }
-
-                    if (3 <= _debug) {
-                        console && console.log("sources apres markdown", sources);
-                    }
-
-                    // URL toute seule
-                    var regex = new RegExp(/^(http[s]?:\/\/([^/]+)\/[^" ,]+)[^"]{1,2}$/g);
-                    match = regex.exec(raw_sources);
-                    while (match != null) {
-                        url   = match[1];
-                        title = match[2];
-                        sources.push({"url":url, "title":title});
-                        match = regex.exec(raw_sources);
-                    }
-
-                    if (3 <= _debug) {
-                        console && console.log("sources apres urls simples", sources);
-                    }
-
+    //browser.storage.local.get(['urls', "sites", "infobulles", "last_update"], function(results){
+        
+        //if ("urls" in results) {
+            if (_debug > 4) {
+                console && console.log("urls is in results");
+            }
+            //try {
+                //urls = results.urls;
+                //sites = results.sites;
+                debunker = urls.hasOwnProperty(u);
+                if (debunker == true) {
+                    site_id = urls[u];
                     if (2 <= _debug) {
-                        console && console.group("tout s'est bien passé");
-                        console && console.log('site_actif     =',site_actif     );
-                        console && console.log('note_decodex   =',note_decodex   );
-                        console && console.log('soumission     =',soumission     );
-                        console && console.log('notule         =',notule         );
-                        console && console.log('slug           =',slug           );
-                        console && console.log('proprietaires  =',proprietaires  );
-                        console && console.log('interets       =',interets       );
-                        console && console.log('conflits       =',conflits       );
-                        console && console.log('subventions    =',subventions    );
-                        console && console.log('sources        =',sources        );
-                        console && console.groupEnd();
-
+                        console && console.log('site FOUND ! ', site_id);
                     }
-					
-					
-                } catch(e) {
-                    if (1 <= _debug) {
-                        console && console.error("ERREUR DEBUNKER");
-                        console && console.error(e);
-                        console && console.log(sites[site_id]);
+                    //try {
+                        site_actif     = sites[site_id][col_nom];                    // nom du site
+                        note_decodex   = parseInt(sites[site_id][col_note_decodex]); // note decodex
+                        soumission     = parseInt(sites[site_id][col_soumission]);   // note insoumis
+                        notule         = sites[site_id][col_desc];                   // description originale
+                        slug           = sites[site_id][col_slug];                   // nom normalisé
+
+                        var proprietaire1 = sites[site_id][col_proprietaire1];      // propriétaires
+                        var fortunes1      = sites[site_id][col_fortune1     ];      // propriétaires
+                        var marque1        = sites[site_id][col_marque1      ];      // propriétaires
+                        var influence1     = sites[site_id][col_influence1   ];      // propriétaires
+
+                        var proprietaire2 = sites[site_id][col_proprietaire2];      // propriétaires
+                        var fortunes2      = sites[site_id][col_fortune2     ];      // propriétaires
+                        var marque2        = sites[site_id][col_marque2      ];      // propriétaires
+                        var influence2     = sites[site_id][col_influence2   ];      // propriétaires
+
+                        var proprietaire3 = sites[site_id][col_proprietaire3];      // propriétaires
+                        var fortunes3      = sites[site_id][col_fortune3     ];      // propriétaires
+                        var marque3        = sites[site_id][col_marque3      ];      // propriétaires
+                        var influence3     = sites[site_id][col_influence3   ];      // propriétaires
+
+                        proprietaires = [proprietaire1, proprietaire2, proprietaire3];
+                        fortunes      = [fortunes1    , fortunes2    , fortunes3    ];
+                        marques       = [marque1     , marque2       , marque3      ];
+                        influences    = [influence1  , influence2    , influence3   ];
+
+                        subventions    = sites[site_id][col_subventions];            // Montant des subventions d'état
+                        publicite      = sites[site_id][col_pub];                    // Pub ?
+
+                        var raw_sources = sites[site_id][col_sources];                // Nos sources (urls séparés par virgule et/ou espace)
+
+                        if (3 <= _debug) {
+                            console && console.info("sources avant markdown", sources);
+                        }
+                        // Markdown style
+                        var regex = new RegExp(/\[([^\]]*?)\]\(([^\)]*?)\)[, ]{0,2}/gm);
+                        match = regex.exec(raw_sources);
+                        sources = [];
+                        while (match != null) {
+                            title = match[1];
+                            url   = match[2];
+                            sources.push({"url":url, "title":title});
+                            match = regex.exec(raw_sources);
+                        }
+
+                        if (3 <= _debug) {
+                            console && console.log("sources apres markdown", sources);
+                        }
+
+                        // URL toute seule
+                        var regex = new RegExp(/^(http[s]?:\/\/([^/]+)\/[^" ,]+)[^"]{1,2}$/g);
+                        match = regex.exec(raw_sources);
+                        while (match != null) {
+                            url   = match[1];
+                            title = match[2];
+                            sources.push({"url":url, "title":title});
+                            match = regex.exec(raw_sources);
+                        }
+
+                        if (3 <= _debug) {
+                            console && console.log("sources apres urls simples", sources);
+                        }
+
+                        if (2 <= _debug) {
+                            console && console.group("tout s'est bien passé");
+                            console && console.log('site_actif     =',site_actif     );
+                            console && console.log('note_decodex   =',note_decodex   );
+                            console && console.log('soumission     =',soumission     );
+                            console && console.log('notule         =',notule         );
+                            console && console.log('slug           =',slug           );
+                            console && console.log('proprietaires  =',proprietaires  );
+                            console && console.log('interets       =',interets       );
+                            console && console.log('conflits       =',conflits       );
+                            console && console.log('subventions    =',subventions    );
+                            console && console.log('sources        =',sources        );
+                            console && console.groupEnd();
+
+                        }
+                    
+                    browser.browserAction.setIcon({
+                        path: "img/icones/icon" + (soumission) + ".png", // note
+                        tabId: t
+                    });
+                    if(infobulles[soumission] == true && d == true){  // note
+                        browser.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                            browser.tabs.sendMessage(tabs[0].id, {text: "soumission"+soumission}, function(response) { // note
+                            });
+                        });
                     }
                 }
-
-                browser.browserAction.setIcon({
-                    path: "img/icones/icon" + (soumission) + ".png", // note
-                    tabId: t
-                });
-                if(results.infobulles[soumission] == true && d == true){  // note
-                    browser.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                        browser.tabs.sendMessage(tabs[0].id, {text: "soumission"+soumission}, function(response) { // note
-                        });
+                else {
+                    if (2 <= _debug) {
+                        console && console.info("site non trouvé", u);
+                        console && console.log(u);
+                    }
+                    browser.browserAction.setIcon({
+                        path: "icone.png",
+                        tabId: t
                     });
                 }
-            }
-            else {
-                if (2 <= _debug) {
-                    console && console.info("site non trouvé", u);
-                    console && console.log(u);
+
+                if (u.match(/youtube.com/)) {
+
+                    if (null == soumission)
+                        soumission  = 0;                             // propriétaires
+
+                    browser.browserAction.setIcon({
+                        path: "img/icones/icon" + (soumission) + ".png", // note
+                        tabId: t
+                    });
+
+                    if ("" == proprietaires)
+                        proprietaires  = "Youtube est une propriété de la Holding Alphabet (Google)";                             // propriétaires
+                    if ("" == interets)
+                        interets       = "Le groupe Alphabet(Google) a de nombreux intérêts internationnaux. Son business model est fortement basé sur la publicité et son quasi-monopole de la publicité. Google exerce de nombreuses pressions sur les états et l'Union Européenne.";                               // intérets
+                    if ("" == conflits)
+                        conflits       = "Youtube peut être un outil de partage de connaissances. Les vidéastes et utilisateurs de la plateforme youtube ne sont pas forcément soumis à Google, mais… ";  // exemple de conflits / complicité idéologique
+                    if ("" == subventions)
+                        subventions    = "";             // Montant des subventions d'état
+                    if ("" == sources)
+                        sources        = "";             // Nos sources (urls séparés par virgule et/ou espace)
                 }
-                browser.browserAction.setIcon({
-                    path: "icone.png",
-                    tabId: t
-                });
-            }
-
-            if (u.match(/youtube.com/)) {
-
-                if (null == soumission)
-                    soumission  = 0;                             // propriétaires
-
-                browser.browserAction.setIcon({
-                    path: "img/icones/icon" + (soumission) + ".png", // note
-                    tabId: t
-                });
-
-                if ("" == proprietaires)
-                    proprietaires  = "Youtube est une propriété de la Holding Alphabet (Google)";                             // propriétaires
-                if ("" == interets)
-                    interets       = "Le groupe Alphabet(Google) a de nombreux intérêts internationnaux. Son business model est fortement basé sur la publicité et son quasi-monopole de la publicité. Google exerce de nombreuses pressions sur les états et l'Union Européenne.";                               // intérets
-                if ("" == conflits)
-                    conflits       = "Youtube peut être un outil de partage de connaissances. Les vidéastes et utilisateurs de la plateforme youtube ne sont pas forcément soumis à Google, mais… ";  // exemple de conflits / complicité idéologique
-                if ("" == subventions)
-                    subventions    = "";             // Montant des subventions d'état
-                if ("" == sources)
-                    sources        = "";             // Nos sources (urls séparés par virgule et/ou espace)
-            }
-        } catch(e) {
-            console && console.error(e);
-        }
-
-        var today = new Date();
-        if(always_refresh || (today.getTime() - results.last_update)/1000/60/60 >= 24) {
-
-            if (1 <= _debug) {
-                console && console.log("refresh every hour or refresh forced");
-            }
-            loadData();
-        } else {
-            if (2 <= _debug) {
-                console && console.log("(not refresh) use data found in cache");
-            }
-        }
-    });
+            
+			testDate();
+        //}
+	
+    //});
 }
 
 
 function checkSite(do_display){
     browser.tabs.query({currentWindow: true, active: true}, function(tabs){
-		if (!tabs.length) return;
+        if (!tabs.length) return;
+		if (!urls) {
+			callback_once_loaded =   function() {checkSite(do_display); };
+			loadData();
+			return ;
+		}
+		
         var tab;
         for (active_tab of tabs) {
             tab = active_tab;
         }
-        active_url = lastSlash(tab.url);
+        //active_url = lastSlash(tab.url);
+		active_url = tab.url;
         if (_debug > 5) {
             console && console.warn("active url", active_url);
         }
@@ -426,7 +472,7 @@ function checkSite(do_display){
         if(active_url.indexOf("youtube.com/") > -1){
             if(active_url.indexOf("channel") == -1){
                 browser.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                    browser.tabs.sendMessage(tabs[0].id, {text: 'report_back'}, function(response){
+                    browser.tabs.sendMessage(tab.id, {text: 'report_back'}, function(response){
                         clean_url = response.farewell.replace('https://www.', "");
                         debunkSite(clean_url, tab.id, do_display);
                     });
@@ -476,10 +522,65 @@ function checkSite(do_display){
                 }
             }
             clean_url = tampon;
-            debunkSite(clean_url, tab.id, do_display);
+            
+			
+			
+			/*browser.tabs.sendMessage(tab.id, {text: 'estUnSondage'}, function(response){
+				//window.estUnSondage = response.estUnSondage;
+				console.log("response", response);
+				//debunkSite(clean_url, tab.id, do_display);
+			});*/
+			
+			function doStuffWithDom(domContent) {
+				
+				if (domContent) {
+					window.estUnSondage = domContent[0];
+					console.log(domContent[0]);
+				} else {
+					console.log("");
+				}
+			}
+
+	
+			function insertedCode () {
+				var sondeurs = ['ifop','bva','ipsos','cevipof','sofres'];
+				function findSondeur(str) {
+					str = str.toLowerCase();
+					for (var k = 0; k < sondeurs.length; k++) {
+						if (str.indexOf(sondeurs[k]) != -1) return sondeurs[k];
+					}
+				}
+				var tmp = "";
+				var title = document.documentElement.querySelector("head title"); 
+				if (title) { var s = findSondeur(title.outerHTML); if (s) return s; }
+				
+				var tt = document.documentElement.querySelectorAll("head meta");
+				for (var i = 0; i < tt.length; i++) {
+					var s = findSondeur(tt[i].outerHTML); if (s) return s;
+				}
+				return "";
+			}
+	
+			window.estUnSondage = "";
+			
+			if (active_url.indexOf("chrome://") == -1) {
+				browser.tabs.executeScript(tab.id,
+					{
+						code: '('+ insertedCode + ')();'
+					},
+					doStuffWithDom
+				);
+			}
+			
+			
+			debunkSite(clean_url, tab.id, do_display);
+			
+			
         }
     });
 }
+
+
 
 
 browser.tabs.onActivated.addListener(function (tabId, tab) {

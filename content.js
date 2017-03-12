@@ -70,9 +70,13 @@
                              .####+
                                ,:`
  */
- 
- var browser = browser || chrome;
- 
+var browser = browser || chrome;
+
+
+var estUnSondage = null;
+
+
+if (1) {
 (function decodexInfobulle(){
     'use strict';
 
@@ -354,13 +358,14 @@
             infobulle.addEventListener('mouseleave', removeAterTime);
             removeAterTime();
         }
-        else {
-            if (request.text == 'report_back') {
-               sendResponse({farewell: document.querySelector(".yt-user-info").getElementsByTagName('a')[0].href});
-               //console.log("URL CHANNEL ---> " + document.querySelector(".yt-user-info"));
-            }
+		else if (request.text == 'report_back') {
+		   sendResponse({farewell: document.querySelector(".yt-user-info").getElementsByTagName('a')[0].href});
+		   //console.log("URL CHANNEL ---> " + document.querySelector(".yt-user-info"));
+		}
+		else if (request.text == 'estUnSondage') {
+			sendResponse({estUnSondage: "estUnSondage"});
+		}
 
-        }
       });
 
     /*browser.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
@@ -372,7 +377,63 @@
 
 })();
 
+}
+
+function isLetter(c) {
+	var code = c.charCodeAt(0);
+	return (code >= 'a'.charCodeAt(0) && code <= 'z'.charCodeAt(0));
+}
+
+var sondeurs = ['ifop','bva','ipsos','cevipof','sofres'];
+var motclefSondage = ['sondage'];
 
 
 
+function doStuffWithDom(str) {
+    //console.log('I received the following DOM content:\n' , domContent[0]);
+	
+	estUnSondage = null;
+	for (var i in sondeurs) {
+		var nom = sondeurs[i];
+		var ind = str.indexOf(nom);
+		if (ind != -1 && (ind + nom.length == str.length || !isLetter(str[ind + nom.length]) )) {
+			estUnSondage = { sondeur : nom, comment : 'sofres appartient à tel milliardaire'};
+			console.log("c est un sondage");
+		}
+	}
+	
+	//var background = browser.extension.getBackgroundPage();
+	
+	//if (estUnSondage) background.estUnSondage = estUnSondage;
+	
+}
+
+
+	
+	function insertedCode () {
+		var tmp = "";
+		var title = document.documentElement.querySelector("title");
+		if (title) tmp += title.outerHTML;
+		var tab = document.documentElement.querySelectorAll("meta");
+		for (var i = 0; i < tab.length; i++) {
+			tmp += tab[i].outerHTML;
+		}
+		return tmp;
+	}
+
+
+	function doIt() {
+		var str = insertedCode();
+		doStuffWithDom(str);
+	}
+
+/*doIt();
+console.log("addListener -----------------------------------------------------");
+chrome.runtime.onMessage.addListener(
+      function(request, sender, sendResponse) {
+		  if (request.text == 'estUnSondage') {
+			sendResponse({estUnSondage: "estUnSondage"});
+		}
+	  });
+//document.addEventListener("DOMContentLoaded", doIt); */
 

@@ -2,26 +2,32 @@ sudo: false
 dist: trusty
 language: node_js
 node_js:
-    - "4.2.6"
+  - "node"
 
 cache: apt
 
 addons:
-  firefox: "51.0"
-
+  firefox: '51.0'
 install:
-    - npm install -g web-ext
+  - npm install -g web-ext
+  - npm install -g chrome-webstore-manager
+  - npm install -g chrome-webstore-upload
+  - npm install -g chrome-webstore-upload-cli
 
-script: web-ext lint && web-ext build
+script : git describe --always
 
-before_deploy: tag=$(git describe --exact-match --tags HEAD|sed "s/firefox-//") &&  mv web-ext-artifacts/*.zip decodex-insoumis-${tag/firefox-}.xpi
+before_deploy:
+  - scripts/deploy-firefox.sh --publish
+  - scripts/deploy-chrome.sh --publish
+  - export RELEASE_PKG_FILE=$(ls build/*)
+  - echo "deploying $RELEASE_PKG_FILE to GitHub releases"
 
 deploy:
-    provider: releases
-    api_key: "${GH_TOKEN}"
-    file: "decodex-insoumis-${tag}.xpi"
-    skip_cleanup: true
-    on:
-        tags: true
+  provider: releases
+  api_key: ${GITHUB_API_KEY}
+  file_glob: true
+  file: build/*
+  skip_cleanup: true
+  on:
+    tags: true
 
-after_deploy: web-ext sign --api-key ${API_KEY} --api-secret ${API_SECRET}

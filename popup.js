@@ -121,6 +121,29 @@ function createLink(toDOM,url,title) {
 	return a;
 }
 
+
+function join2(tab,sep,withoutEnding) {
+	if (!tab) return "";
+	var str = "";
+	for (var n = 0; n < tab.length; n++) {
+		if (tab[n]) str += tab[n]+sep;
+	}
+	if (withoutEnding) str = str.substr(0,str.length-sep.length);
+	return str;
+}
+function joinAndvisibleIffNonEmpty(background,field) {
+	//console.log("joinAnd ",str,"    :", field);
+	var str = join2(background[field],",",true);
+	
+	if (str) {
+		var elem = document.querySelector("#"+field+" span.content");
+		elem.innerText = str;
+	} else {
+		var elem = document.querySelector("#"+field);
+		elem.hidden = true;
+	}
+}
+		
 function main() {
 	//console && console.log('start main in popup.js');
 
@@ -200,21 +223,32 @@ function main() {
             document.querySelector("#les-decodeurs #description").innerText = "";
         }
 
-        document.querySelector("#proprietaires span.content").innerText = background.proprietaires.join(",");
-        document.querySelector("#fortunes span.content").innerText = background.fortunes.join(",");
-        document.querySelector("#brands span.content").innerText = background.marques.join(",");
-        document.querySelector("#influences span.content").innerText = background.influences.join(",");
-
+		
+        
+		joinAndvisibleIffNonEmpty(background,"proprietaires");
+		joinAndvisibleIffNonEmpty(background,"fortunes");
+		joinAndvisibleIffNonEmpty(background,"brands");
+		joinAndvisibleIffNonEmpty(background,"influences");
 
         //document.querySelector("#interests span.content").innerText = background.interets;
         //document.querySelector("#conflicts span.content").innerText = background.conflits;
         //document.querySelector("#subsidies span.content").innerText = background.subventions;
 
-		var par = document.querySelector("#sources span.content"); par.innerText = "";
-        for(var i in background.sources) {
-			var obj = background.sources[i];
-			createLink(par,obj.url,obj.title);
-        }
+		if (!background.sources.length) document.querySelector("#sources").hidden = true;
+		else  {
+			var par = document.querySelector("#sources span.content"); par.innerText = "";
+			for(var i in background.sources) {
+				var obj = background.sources[i];
+				createLink(par,obj.url,obj.title);
+			}
+		}
+		
+		if (background.estUnSondage) {
+			document.querySelector("#sondeur span.content").innerText = background.estUnSondage;
+		} else {
+			document.querySelector("#sondeur").hidden = true;
+		}
+		
 		
         // background.sources.forEach(function(obj, i){
         //});
@@ -223,7 +257,7 @@ function main() {
         document.querySelector("#decodex-insoumis-window").style.display = "block";
         document.querySelector("#verif-insoumis").classList.remove("active");
         document.querySelector("#decodex-insoumis-window").classList.add('active');
-        document.querySelector("#more-info-insoumis").href = "https://laec.fr/section/8/la-revolution-citoyenne-dans-les-medias";
+        //document.querySelector("#more-info-insoumis").href = "https://laec.fr/section/8/la-revolution-citoyenne-dans-les-medias";
     }
     else {
         document.querySelector("#verif-insoumis").style.display = "block";
@@ -258,8 +292,8 @@ function main() {
             }
     });
 	
-	linkInNewTab(document.querySelector(".propos-par a"));
-	linkInNewTab(document.querySelector("#more-info-insoumis"));
+	//linkInNewTab(document.querySelector(".propos-par a"));
+	//linkInNewTab(document.querySelector("#more-info-insoumis"));
 	
     for(var i=0;i<max_notes;i++){
         document.querySelector("#alert"+i).style.color = colors[i];

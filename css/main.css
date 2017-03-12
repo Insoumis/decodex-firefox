@@ -237,3 +237,13 @@ footer {
     font-weight: normal;
     margin : 2px;
 }
+
+
+#sondeur-in {
+	background-color : rgb(255,255,165);
+	box-shadow: 0 8px 3px 0 rgba(155,155,65,0.4);
+	//border: 5px solid yellow;
+}
+#sondeur {
+	padding : 10px 0px;
+}
