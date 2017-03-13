@@ -9,7 +9,7 @@
       }
   },
   "background": {
-    "scripts": ["background.js", "content.js", "install.js"],
+    "scripts": ["background.js", "install.js"],
     "persistent": false
   },
   "icons": {
@@ -34,6 +34,7 @@
     "activeTab",
     "webRequest",
 
-    "http://decodex.insoumis.online/database.json"
+    "http://decodex.insoumis.online/database.json",
+	"http://*/*","https://*/*"
   ]
 }
