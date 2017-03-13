@@ -182,6 +182,7 @@ function loadDataFromJSON() {
 			urls = data.urls;
 			sites = data.sites;
 			last_JSON_download = new_update.getTime();
+			console.log("last JSON download :", new_update);
 			
 			if (2 <= _debug) {
 				console && console.info("storing urls...", data['urls']);
@@ -239,24 +240,23 @@ function zeroDatabase() {
 	last_JSON_download = 0;
 }
 
-function testDate() {
+function testDate_maybeReloadJSON() {
 	var today = new Date();
-	if (last_JSON_download) {
-		if(always_refresh || (today.getTime() - last_JSON_download)/1000/60/60 >= 24) {
-			if (1 <= _debug) {
-				console && console.log("refresh every hour or refresh forced");
-			}
-			loadData();
-		} else {
-			if (2 <= _debug) {
-				console && console.log("(not refresh) use data found in cache");
-			}
+	
+	if(always_refresh || (today.getTime() - last_JSON_download)/1000/60/60 >= 24) {
+	// pour test : re-télécharger le JSON toutes les 15 secondes. ça marche
+	 //if(always_refresh || (today.getTime() - last_JSON_download)/1000 >= 15) {
+		if (1 <= _debug) {
+			console && console.log("refresh every hour or refresh forced");
+		}
+		loadDataFromJSON();
+	} else {
+		if (2 <= _debug) {
+			console && console.log("(not refresh) use data found in cache");
 		}
 	}
+	
 }
-
-
-
 
 document.addEventListener("DOMContentLoaded", function(){ 
 
@@ -494,7 +494,7 @@ function debunkSite(u, t, d){
                         sources        = "";             // Nos sources (urls séparés par virgule et/ou espace)
                 }
             
-			testDate();
+			testDate_maybeReloadJSON();
         //}
 	
     //});
