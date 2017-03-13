@@ -30,7 +30,6 @@
     "notifications",
     "activeTab",
 
-    "http://decodex.insoumis.online/database.json",
-	"http://*/*","https://*/*"
+    "http://decodex.insoumis.online/database.json"
   ]
 }
