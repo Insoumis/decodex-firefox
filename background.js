@@ -295,7 +295,62 @@ function youtubeChannel(u){
 }
 
 
+function isSondage(tab) {
+	/*browser.tabs.sendMessage(tab.id, {text: 'estUnSondage'}, function(response){
+		//window.estUnSondage = response.estUnSondage;
+		console.log("response", response);
+		//debunkSite(clean_url, tab.id, do_display);
+	});*/
+	function callbackSondage(result) {
+		if (result) {
+			window.estUnSondage = result[0];
+			console.log("sondeur : ", window.estUnSondage);
+		} else {
+			//console.log("pas de sondage");
+		}
+	}
 
+
+	function insertedCode () {
+		var sondeurs = ['ifop','bva','ipsos','cevipof','sofres'];
+		function findSondeur(str) {
+			str = str.toLowerCase();
+			for (var k = 0; k < sondeurs.length; k++) {
+				if (str.indexOf(sondeurs[k]) != -1) return sondeurs[k];
+			}
+		}
+		var tmp = "";
+		var title = document.documentElement.querySelector("head title"); 
+		if (title) { var s = findSondeur(title.outerHTML); if (s) return s; }
+		
+		var tt = document.documentElement.querySelectorAll("head meta");
+		for (var i = 0; i < tt.length; i++) {
+			var s = findSondeur(tt[i].outerHTML); if (s) return s;
+		}
+		return "";
+	}
+
+	window.estUnSondage = "";
+	
+	browser.tabs.executeScript(tab.id, { code: '('+ insertedCode + ')();'}, callbackSondage);
+	// executeScript fonctionne toujours alors que browser.tabs.sendMessage ne fonctionne que les 2 premieres fois...
+}
+
+function reInitSources() {
+	debunker = false;
+	
+	soumission = 0;
+	
+	sources = [];
+	proprietaires = "";
+	fortunes    = "";
+	marques     = "";
+	influences  = "";
+	subventions  = "";
+	publicite  = "";
+	
+	window.estUnSondage = "";
+}
 function debunkSite(u, t, d){
     if (3 <= _debug)
         console && console.log('debunk site ', u);
@@ -448,6 +503,8 @@ function debunkSite(u, t, d){
 
 function checkSite(do_display){
     browser.tabs.query({currentWindow: true, active: true}, function(tabs){
+		reInitSources();
+		
         if (!tabs.length) return;
 		if (!urls) {
 			callback_once_loaded =   function() {checkSite(do_display); };
@@ -468,7 +525,7 @@ function checkSite(do_display){
             console && console.warn("active url", active_url);
         }
 
-        if(active_url.indexOf("chrome-extension://") == 0) {
+        if(active_url.indexOf("chrome-extension://") == 0 || active_url.indexOf("chrome://") == 0) {
             return;
         }
         // YOUTUBE
@@ -528,53 +585,7 @@ function checkSite(do_display){
             
 			
 			
-			/*browser.tabs.sendMessage(tab.id, {text: 'estUnSondage'}, function(response){
-				//window.estUnSondage = response.estUnSondage;
-				console.log("response", response);
-				//debunkSite(clean_url, tab.id, do_display);
-			});*/
-			
-			function doStuffWithDom(domContent) {
-				
-				if (domContent) {
-					window.estUnSondage = domContent[0];
-					console.log(domContent[0]);
-				} else {
-					console.log("");
-				}
-			}
-
-	
-			function insertedCode () {
-				var sondeurs = ['ifop','bva','ipsos','cevipof','sofres'];
-				function findSondeur(str) {
-					str = str.toLowerCase();
-					for (var k = 0; k < sondeurs.length; k++) {
-						if (str.indexOf(sondeurs[k]) != -1) return sondeurs[k];
-					}
-				}
-				var tmp = "";
-				var title = document.documentElement.querySelector("head title"); 
-				if (title) { var s = findSondeur(title.outerHTML); if (s) return s; }
-				
-				var tt = document.documentElement.querySelectorAll("head meta");
-				for (var i = 0; i < tt.length; i++) {
-					var s = findSondeur(tt[i].outerHTML); if (s) return s;
-				}
-				return "";
-			}
-	
-			window.estUnSondage = "";
-			
-			if (active_url.indexOf("chrome://") == -1) {
-				browser.tabs.executeScript(tab.id,
-					{
-						code: '('+ insertedCode + ')();'
-					},
-					doStuffWithDom
-				);
-			}
-			
+			isSondage(tab); /// si c'en est un, met dans window.estUnSondage  le nom du sondeur
 			
 			debunkSite(clean_url, tab.id, do_display);
 			
@@ -589,15 +600,16 @@ function checkSite(do_display){
 browser.tabs.onActivated.addListener(function (tabId, tab) {
     checkSite(false);
 });
-
+/*
 browser.windows.getCurrent(function (tabId, tab) {
     checkSite(false);
-});
+});*/
 
 browser.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     checkSite(changeInfo.status && changeInfo.status == "complete");
 });
 
+/*
 browser.windows.onFocusChanged.addListener(function (tabId, tab) {
     checkSite(false);
 });
@@ -610,3 +622,4 @@ browser.browserAction.onClicked.addListener(function (tabId, tab) {
 browser.tabs.onCreated.addListener(function (tabId, tab) {
     checkSite(true);
 });
+*/

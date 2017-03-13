@@ -123,7 +123,7 @@ function main(){
         }
     } catch(e) {
         console && console.log("error in install.js for infobulles, check-alert"+i);
-        console && console.error(e);
+        //console && console.error(e);
     }
 
     });
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     } catch(e) {
         console && console.info("error in install.js for check-alert"+i);
-        console && console.error(e);
+        //console && console.error(e);
     }
     main();
 });
