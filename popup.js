@@ -101,26 +101,6 @@ function refreshDatabase(e){
     this.blur();
 }
 
-function linkInNewTab(a) {
-	var href = a.href; // une fermeture ... sinon ça ne marche pas si le <a> contient par exemple une <img>
-	a.addEventListener('click', function(e){
-		if (href!==undefined) {
-			browser.tabs.create({url:href});
-			window.close();
-		}
-		e.preventDefault();
-	});
-	return a;
-}
-
-function createLink(toDOM,url,title) {
-    var a = document.createElement("a");
-	a.href = url; a.innerText = title;
-	linkInNewTab(a);
-	toDOM.appendChild(a);
-	return a;
-}
-
 
 function join2(tab,sep,withoutEnding) {
 	if (!tab) return "";
@@ -145,7 +125,7 @@ function joinAndvisibleIffNonEmpty(background,field) {
 }
 
 
-var lesSondages = "Les sondages en général sont à prendre avec recul voire méfiance,  divers biais reconnus sont laissés à la libre appréciation des sondeurs.";
+var lesSondages = "Les sondages en général sont à prendre avec recul voire méfiance. <a href=\"https://fr.wikipedia.org/wiki/Sondage_d'opinion#Aspects_m.C3.A9thodologiques\" target=\"_blank\">Divers biais reconnus</a> sont laissés à la libre appréciation des sondeurs.";
 var sondeur = {
 	"ifop" : "l'$sondeur en particulier est la propriété à 95 % de la famille Parisot, notamment de Laurence Parisot présidente du MEDEF de 2007 à 2013",
 	"sofres" : "$sondeur en particulier fait partie du groupe international d'études marketing et de sondages TNS acquis par le leader de la communication et la publicité WPP", 
@@ -167,7 +147,7 @@ function main() {
         // gris
         "Nous n'avons pas encore évalué ce média selon nos critères, ou nous n'avons pas pu trouver d'information suffisamment fiable pour l'indiquer.",
         // rouge
-        "Selon les critères retenus, ce média n'est pas indépendant. Cette catégorie regroupe les médias appartenant a de grands groupes industriels ou puissance financières qui peuvent influencer le traitement de l'information ou la ligne éditoriale. Quoi qu'il en soit, nous vous conseillons de chercher une ou plusieurs source alternative à l'information que vous lisez, voir opposée, en particulier si cette presse confirme vos idées.en particulier si cette presse confirme vos idées.",
+        "Selon les critères retenus, ce média n'est pas indépendant. Cette catégorie regroupe les médias appartenant a de grands groupes industriels ou puissance financières qui peuvent influencer le traitement de l'information ou la ligne éditoriale. Quoi qu'il en soit, nous vous conseillons de chercher une ou plusieurs source alternative à l'information que vous lisez, voir opposée, en particulier si cette presse confirme vos idées.",
         // jaune
         "Selon les critères retenus, ce média n'est pas vraiment indépendant. Cette catégorie regroupe les médias gérés par l'état français ou un état étranger. Ce type de média est en général moins soumis aux sphères financières, mais cela ne veut pas dire qu'il ne faut pas chercher une ou plusieurs source alternative à l'information que vous lisez, en particulier si cette presse confirme la version officielle de l'état concerné.",
         // bleu
@@ -254,8 +234,9 @@ function main() {
 		else  {
 			var par = document.querySelector("#sources span.content"); par.innerText = "";
 			for(var i in background.sources) {
-				var obj = background.sources[i];
-				createLink(par,obj.url,obj.title);
+				var a = document.createElement("a");
+				a.href = background.sources[i].url; a.innerText = background.sources[i].title;
+				par.appendChild(a);
 			}
 		}
 		
@@ -308,12 +289,14 @@ function main() {
             }
     });
 	
-	//linkInNewTab(document.querySelector(".propos-par a"));
-	//linkInNewTab(document.querySelector("#more-info-insoumis"));
-	
     for(var i=0;i<max_notes;i++){
         document.querySelector("#alert"+i).style.color = colors[i];
     }
+	
+	var tmp = document.querySelectorAll("a");
+	for (var a in tmp) {
+		tmp[a].target = "_blank";
+	}
 }
 
 document.addEventListener('DOMContentLoaded', function () {

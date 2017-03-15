@@ -253,6 +253,13 @@ footer {
 	//color : rgb(215,255,165);
 	color : rgb(115,155,25);
 }
+#sondeur span.content a {
+	color : rgb(95,125,15);
+}
+#sondeur span.content a:hover {
+	color : rgb(65,105,5);
+	text-decoration : none;
+}
 #sondeur span.sondeur-t {
 	//color : rgb(215,255,165);
 	color : rgb(145,145,65);
