@@ -312,11 +312,26 @@ function isSondage(tab) {
 
 
 	function insertedCode () {
-		var sondeurs = ['ifop','bva','ipsos','cevipof','sofres'];
+		function isNotLetter(s,ind) { return ind < 0 || ind >= s.length || s[ind].toLowerCase() == s[ind].toUpperCase(); }
+		debugger;
+		var sondeurs = ['ifop','bva','ipsos','cevipof','sofres','odoxa','sondage','sondages']; var indexSondage = 6;
 		function findSondeur(str) {
 			str = str.toLowerCase();
 			for (var k = 0; k < sondeurs.length; k++) {
-				if (str.indexOf(sondeurs[k]) != -1) return sondeurs[k];
+				var ind = str.indexOf(sondeurs[k]);
+				if (ind != -1 &&  isNotLetter(str,ind-1) && isNotLetter(str,ind+sondeurs[k].length)) {
+					if (k >= indexSondage) {
+						var text = document.body.innerText.toLowerCase();
+						for (var k = 0; k < indexSondage; k++) {
+							var ind = text.indexOf(sondeurs[k]);
+							if (ind != -1 &&  isNotLetter(str,ind-1) && isNotLetter(str,ind+sondeurs[k].length)) {
+								return sondeurs[k];
+							}
+						}
+					} else {
+						return sondeurs[k];
+					}
+				}
 			}
 		}
 		var tmp = "";

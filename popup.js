@@ -143,7 +143,23 @@ function joinAndvisibleIffNonEmpty(background,field) {
 		elem.hidden = true;
 	}
 }
-		
+
+
+var lesSondages = "Les sondages en général sont à prendre avec recul voire méfiance,  divers biais reconnus sont laissés à la libre appréciation des sondeurs.";
+var sondeur = {
+	"ifop" : "l'$sondeur en particulier est la propriété à 95 % de la famille Parisot, notamment de Laurence Parisot présidente du MEDEF de 2007 à 2013",
+	"sofres" : "$sondeur en particulier fait partie du groupe international d'études marketing et de sondages TNS acquis par le leader de la communication et la publicité WPP", 
+	"odoxa" : "Odoxa est détenu par Gaël Sliman et Céline Bracq",
+	"bva" : "BVA est une société d'études et de conseil marketing",
+	"ipsos" : "l'$sondeur est une société internationale de marketing d’opinion",
+	"cevipof" : "Cas particulier parmi les institus de sondage, le Centre de recherches politiques de Sciences Po est une unité mixte de recherche sous la tutelle du CNRS et de la fondation en sciences politiques.",
+	"sondage" : "Les sondages en général sont à prendre avec la plus grande méfiance, et divers biais reconnus sont laissés à la libre appréciation des sondeurs."
+}
+function afficherSondeur(nom) {
+	var str = sondeur[nom];
+	return lesSondages+"<br/>"+str.replace("$sondeur",nom);
+}
+
 function main() {
 	//console && console.log('start main in popup.js');
 
@@ -244,7 +260,7 @@ function main() {
 		}
 		
 		if (background.estUnSondage) {
-			document.querySelector("#sondeur span.content").innerText = background.estUnSondage;
+			document.querySelector("#sondeur span.content").innerHTML = afficherSondeur(background.estUnSondage);
 		} else {
 			document.querySelector("#sondeur").hidden = true;
 		}

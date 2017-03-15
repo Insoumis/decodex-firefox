@@ -240,10 +240,20 @@ footer {
 
 
 #sondeur-in {
-	background-color : rgb(255,255,165);
-	box-shadow: 0 8px 3px 0 rgba(155,155,65,0.4);
+	//background-color : rgba(215,255,165,0.05);
+	background-color : rgba(100,100,100,0);
+	box-shadow: 4px 4px 4px 0 rgba(255,255,105,0.3);
+	
 	//border: 5px solid yellow;
 }
 #sondeur {
 	padding : 10px 0px;
+}
+#sondeur span.content {
+	//color : rgb(215,255,165);
+	color : rgb(115,155,25);
+}
+#sondeur span.sondeur-t {
+	//color : rgb(215,255,165);
+	color : rgb(145,145,65);
 }
